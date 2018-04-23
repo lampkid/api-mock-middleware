@@ -22,7 +22,7 @@ module.exports =  {
 
         }
         else {
-            console.log('watch with chokidar....');
+            console.log('watch with chokidar....', watchPath);
             chokidar.watch(watchPath, {depth: 99}).on('all', callback);
         }
 
