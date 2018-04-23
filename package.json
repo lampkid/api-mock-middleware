@@ -1,5 +1,5 @@
 {
-  "name": "api-mock-middleware",
+  "name": "api-mocker-middleware",
   "version": "1.4.4",
   "description": "a api mock middleware for webpack-dev-server or express",
   "main": "lib/index.js",

@@ -1,7 +1,7 @@
-api-mock-middleware
+api-mocker-middleware
 ---
 
-api-mock-middleware is a [webpack-dev-server](https://github.com/webpack/webpack-dev-server)  middleware that creates mocks for REST APIs. It will be helpful when you try to test your application without the actual REST API server.
+api-mocker-middleware is a [webpack-dev-server](https://github.com/webpack/webpack-dev-server)  middleware that creates mocks for REST APIs. It will be helpful when you try to test your application without the actual REST API server.
 
 **Features:**  
 
@@ -12,7 +12,7 @@ api-mock-middleware is a [webpack-dev-server](https://github.com/webpack/webpack
 ## Installation
 
 ```bash
-npm install api-mock-middleware --save-dev
+npm install api-mocker-middleware --save-dev
 ```
 
 ## Usage
@@ -77,7 +77,7 @@ doMock(app, {path: mockPath [,proxy:{}]})
 ```diff
 const path = require('path');
 const express = require('express');
-+ const doMock = require('api-mock-middleware');
++ const doMock = require('api-mocker-middleware');
 
 const app = express();
 
@@ -94,7 +94,7 @@ Change your config file to tell the dev server where to look for files: `webpack
 ```diff
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-+ const doMock = require('api-mock-middleware');
++ const doMock = require('api-mocker-middleware');
 
 module.exports = {
   entry: {
