@@ -1,70 +1,95 @@
 const bodyParser = require('body-parser');
-const httpProxy = require('http-proxy');
 const fs = require('fs');
-require('colors-cli/toxic');
+const path = require('path');
 
-const proxyHTTP = httpProxy.createProxyServer({});
 
-let proxy = {};
 
-module.exports = function (app, watchFile, proxyConf = {}) {
-  if (!watchFile) {
-    throw new Error('Mocker file does not exist!.');
-    return;
-  }
-  proxy = require(watchFile);
+const readFileRecursive = require('./src/file');
 
-  if (!proxy) {
-    return function (req, res, next) {
-      next();
-    }
-  }
+const clearCache = require('./src/cache');
 
-  // 监听文件修改重新加载代码
-  // 配置热更新
-  fs.watch(require.resolve(watchFile), function (dt) {
+const watcher = require('./src/watcher');
+
+/*
+ *
+ * design
+ * mock mode:
+ *  path by dir path
+ *  express or koa
+ * other features:
+ *  support request method
+ *  support js/json
+ *  mock dir config
+ *  hot-load
+ *  proxy
+ *  convert params to path
+ *  rewrite path
+ */
+
+
+
+let mockDataCacheMap = {};
+
+function reloadData(cacheMap, file) {
+
     try {
-      // 热更新先引用，冒烟，实时编辑报错，错误语法避免 crash
-      const moackData = require(watchFile);
-      // 确认没有问题进行热更新
-      cleanCache(require.resolve(watchFile));
-      // 完事儿，进行赋值，哈哈成功了！
-      proxy = require(watchFile);
-      console.log(`${` Done: `.green_b.black} Hot Mocker ${watchFile.replace(process.cwd(), '').green} file replacement success!`);
-    } catch (ex) {
-      console.error(`${` Failed: `.red_b.black} Hot Mocker file replacement failed!!`);
+      require(file);
+
+      clearCache(file);
+
+      Object.assign(cacheMap, readFileRecursive(changedModule));
+
+    } catch (err) {
+        console.error(err);
     }
+}
+
+module.exports = function (app, options={path: 'mock', proxy: {}}) {
+  console.warn('Mock path: ', options.path);
+  const mockPath = options.path;
+  const proxyConfig = options.proxy;
+
+  mockDataCacheMap = readFileRecursive(mockPath)
+
+  
+  // watch dir recusive
+  watcher.with('chokidar').watch(path.resolve(mockPath), function (eventType, file) {
+
+    console.log(eventType, file);
+
+    reloadData(mockDataCacheMap, file);
+    
   });
 
   app.all('/*', function (req, res, next) {
-    const proxyURL = `${req.method} ${req.path}`;
-    const proxyNames = Object.keys(proxyConf);
+    const reqPath = `${req.method} ${req.path}`;
+    const proxyNames = Object.keys(proxyConfig);
     const proxyFuzzyMatch = proxyNames.filter(function (kname) {
-      return /\*$/.test(kname) && (new RegExp("^" + kname.replace(/\/\*$/, ''))).test(proxyURL);;
+      return /\*$/.test(kname) && (new RegExp("^" + kname.replace(/\/\*$/, ''))).test(reqPath);
     });
     const proxyMatch = proxyNames.filter(function (kname) {
-      return kname === proxyURL;
+      return kname === reqPath;
     });
     // 判断下面这种情况的路由
-    // => GET /api/user/:org/:name
-    const containMockURL = Object.keys(proxy).filter(function (kname) {
-      return (new RegExp(kname.replace(/(:\w*)[^/]/ig, '(.*)'))).test(proxyURL);
+    // => GET /api/user/:org/:name 
+    const containMockURL = Object.keys(proxyConfig).filter(function (kname) {
+      return (new RegExp(kname.replace(/(:\w*)[^/]/ig, '(.*)'))).test(reqPath);
     });
 
     if (proxyNames.length > 0 && (proxyMatch.length > 0 || proxyFuzzyMatch.length > 0)) {
       let currentProxy = proxyNames.filter(function (kname) {
-        return (new RegExp("^" + kname.replace(/\/\*$/, ''))).test(proxyURL);;
+        return (new RegExp("^" + kname.replace(/\/\*$/, ''))).test(reqPath);;
       });
-      currentProxy = proxyConf[currentProxy[0]];
+      currentProxy = proxyConfig[currentmockDataCacheMap[0]];
       proxyHTTP.web(req, res, { target: currentProxy });
-    } else if (proxy[proxyURL] || (containMockURL && containMockURL.length > 0)) {
+    } else if (mockDataCacheMap[reqPath] || (containMockURL && containMockURL.length > 0)) {
       let bodyParserMethd = bodyParser.json();
       const contentType = req.get('Content-Type');
       if (contentType === 'text/plain') {
         bodyParserMethd = bodyParser.raw({ type: 'text/plain' });
       }
       bodyParserMethd(req, res, function () {
-        const result = proxy[proxyURL] || proxy[containMockURL[0]];
+        const result = mockDataCacheMap[reqPath] || mockDataCacheMap[containMockURL[0]];
         if (typeof result === 'function') {
           result(req, res, next);
         } else {
@@ -76,15 +101,7 @@ module.exports = function (app, watchFile, proxyConf = {}) {
     }
   });
 
-  // 释放老模块的资源
-  function cleanCache(modulePath) {
-    var module = require.cache[modulePath];
-    // remove reference in module.parent
-    if (module.parent) {
-      module.parent.children.splice(module.parent.children.indexOf(module), 1);
-    }
-    require.cache[modulePath] = null;
-  }
+  
   return function (req, res, next) {
     next();
   }

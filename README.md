@@ -105,10 +105,10 @@ module.exports = {
 + devServer: {
 +   ...
 +   before(app){
-+     apiMocker(app, path.resolve('./mocker.js'), {
++     apiMocker(app, { path: path.resolve('./mocker'), proxy:{
 +       'GET /api/user/list': 'http://localhost:3000',
 +       'GET /api/prod/*': 'http://localhost:3000',
-+     })
++     }})
 +   }
 + },
   plugins: [
