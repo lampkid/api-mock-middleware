@@ -1,23 +1,23 @@
-webpack-api-mocker
+api-mock-middleware
 ---
 
-webpack-api-mocker is a [webpack-dev-server](https://github.com/webpack/webpack-dev-server)  middleware that creates mocks for REST APIs. It will be helpful when you try to test your application without the actual REST API server.
+api-mock-middleware is a [webpack-dev-server](https://github.com/webpack/webpack-dev-server)  middleware that creates mocks for REST APIs. It will be helpful when you try to test your application without the actual REST API server.
 
 **Features:**  
 
-🔥 Built in support for hot Mocker file replacement.  
+🔥 Built in support for hot Mock file replacement.  
 🚀 Quickly and easily configure the API via JSON.  
 🌱 Mock API proxying made simple.  
 
 ## Installation
 
 ```bash
-npm install webpack-api-mocker --save-dev
+npm install api-mock-middleware --save-dev
 ```
 
 ## Usage
 
-webpack-api-mocker dev support mock, configured in `mocker.js`.
+Just put your mock files in a dir such as `./mock`.
 
 ```js
 const proxy = {
@@ -66,10 +66,10 @@ const proxy = {
 module.exports = proxy;
 ```
 
-## apiMocker
+## doMock
 
 ```js
-apiMocker(app, mocker[,proxy])
+doMock(app, {path: mockPath [,proxy:{}]})
 ```
 
 ## Using with [Express](https://github.com/expressjs/express)
@@ -77,24 +77,24 @@ apiMocker(app, mocker[,proxy])
 ```diff
 const path = require('path');
 const express = require('express');
-+ const apiMocker = require('webpack-api-mocker');
++ const doMock = require('api-mock-middleware');
 
 const app = express();
 
-+ apiMocker(app, path.resolve('./mocker/index.js'))
++ doMock(app, { path: path.resolve('./mock/')})
 app.listen(8080);
 ```
 
 ## Using with [Webpack](https://github.com/webpack/webpack)
 
-To use api mocker on your [Webpack](https://github.com/webpack/webpack) projects, simply add a setup options to your [webpack-dev-server](https://github.com/webpack/webpack-dev-server) options:
+To mock on your [Webpack](https://github.com/webpack/webpack) projects, simply add a setup options to your [webpack-dev-server](https://github.com/webpack/webpack-dev-server) options:
 
 Change your config file to tell the dev server where to look for files: `webpack.config.js`.
 
 ```diff
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-+ const apiMocker = require('webpack-api-mocker');
++ const doMock = require('api-mock-middleware');
 
 module.exports = {
   entry: {
@@ -105,7 +105,7 @@ module.exports = {
 + devServer: {
 +   ...
 +   before(app){
-+     apiMocker(app, { path: path.resolve('./mocker'), proxy:{
++     doMock(app, { path: path.resolve('./mock'), proxy:{
 +       'GET /api/user/list': 'http://localhost:3000',
 +       'GET /api/prod/*': 'http://localhost:3000',
 +     }})
@@ -123,7 +123,7 @@ module.exports = {
 };
 ```
 
-Must have a file suffix! For example: `./mocker.js`.
+Just put your mock files in a dir such as `./mock`.
 
 Let's add a script to easily run the dev server as well: `package.json`
 
@@ -152,10 +152,10 @@ Mock API proxying made simple.
 ```js
 {
   before(app){
-    apiMocker(app, path.resolve('./mocker.js'), {
+    doMock(app, { path: path.resolve('./mock'), proxy: {
         'GET /api/user/list': 'http://localhost:3000',
         'GET /api/prod/*': 'http://localhost:3000',
-    })
+    }})
   }
 }
 ```
